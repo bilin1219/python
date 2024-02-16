@@ -1,12 +1,6 @@
 from random import randrange
 
 
-def display_board(board):
-    # The function accepts one parameter containing the board's current status
-    # and prints it out to the console.
-    pass
-
-
 def enter_move(board):
     # The function accepts the board's current status, asks the user about their move,
     # checks the input, and updates the board according to the user's decision.
