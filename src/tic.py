@@ -1,100 +1,149 @@
 from random import randrange
 
+class TicTacToe:
+    """
+    Rules for Tic-Tac-Toe
+    The game is played on a grid that's 3 squares by 3 squares.
+    You are X , your friend (or the computer in this case) is O . Players take turns putting their marks in empty squares.
+    The first player to get 3 of her marks in a row (up, down, across, or diagonally) is the winner.
+    When all 9 squares are full, the game is over. If no player has 3 marks in a row, the game ends in a tie.
+    """
 
-def enter_move(board):
-    # The function accepts the board's current status, asks the user about their move,
-    # checks the input, and updates the board according to the user's decision.
-    move = int(input("Please enter your move: ")) - 1
+    class State:
+        pass
 
-    row = move // 3
-    col = move % 3
-    if (row, col) in make_list_of_free_fields(board):
-        board[row][col] = 'O'
-
-
-def make_list_of_free_fields(board):
-    # The function browses the board and builds a list of all the free squares;
-    # the list consists of tuples, while each tuple is a pair of row and column numbers.
-    result = []
-    for row in range(3):
-        for col in range(3):
-            if board[row][col] not in ('O', 'X'):
-                result.append((row, col))
-    return result
+    def __init__(self):
+        self.state = [
+            ['1', '2', '3'],
+            ['4', '5', '6'],
+            ['7', '8', '9']
+        ]
 
 
-def victory_for(board, sign):
-    # The function analyzes the board's status in order to check if
-    # the player using 'O's or 'X's has won the game
-    for index in range(3):
-        if board[index][0] == board[index][1] and board[index][1] == board[index][2]:
-            print("player using " + sign + " has won the game")
+    def player(self, state):
+        # - player(s) : returns which player to move in state s
+        num_x = 0
+        num_o = 0
+        for row in state:
+            for cell in row:
+                if cell == "X":
+                    num_x += 1
+                elif cell == "O":
+                    num_o += 1
+
+        return "X" if num_o >= num_x else "O"
+
+    def actions(self, state):
+        # - actions(s) : return legal moves in state s
+        legal_moves = []
+        for i, row in enumerate(state):
+            for j, cell in enumerate(row):
+                if not (cell == "X" or cell == "O"):
+                    legal_moves.append((i, j))
+
+        return legal_moves
+
+    def result(self, state, action):
+        # - result(s, a) : return state after action a taken in state s
+        result = copy.deepcopy(state)
+        i, j = action
+        result[i][j] = self.player(state)
+        return result
+
+    def terminal(self, state):
+        # - terminal(s) : checks if state s is a terminal state
+        if len(self.actions(state)) == 0:
             return True
-        if board[0][index] == board[1][index] and board[1][index] == board[2][index]:
-            print("player using " + sign + " has won the game")
-            return True
 
-    if board[0][0] == board[1][1] and board[1][1] == board[2][2]:
-        print("player using " + sign + " has won the game")
-        return True
-    elif board[0][2] == board[1][1] and board[1][1] == board[2][0]:
-        print("player using " + sign + " has won the game")
-        return True
-    else:
-        if len(make_list_of_free_fields(board)) == 0:
-            print("Draw, no player won the game")
-            return True
+        for player in "XO":
+            for index in range(0, 3):
+                # row test
+                if state[index][0] == player and state[index][1] == player and state[index][2] == player:
+                    return True
+                # col test
+                if state[0][index] == player and state[1][index] == player and state[2][index] == player:
+                    return True
+
+            d1 = state[0][0] == player and state[1][1] == player and state[2][2] == player
+            d2 = state[0][2] == player and state[1][1] == player and state[2][0] == player
+            if d1 or d2:
+                return True
 
         return False
 
+    def utility(self, state):
+        # - utility(s) : final numerical value for terminal state s
+        for player in "XO":
+            for index in range(0, 3):
+                # row test
+                if state[index][0] == player and state[index][1] == player and state[index][2] == player:
+                    return 1 if player == "X" else -1
+                # col test
+                if state[0][index] == player and state[1][index] == player and state[2][index] == player:
+                    return 1 if player == "X" else -1
 
-def draw_move(board):
-    # The function draws the computer's move and updates the board.
-    print('+-------+-------+-------+')
-    print('|       |       |       |')
-    print('|   ' + board[0][0] + '   |   ' + board[0][1] + '   |   ' + board[0][2] + '   |')
-    print('|       |       |       |')
-    print('+-------+-------+-------+')
-    print('|       |       |       |')
-    print('|   ' + board[1][0] + '   |   ' + board[1][1] + '   |   ' + board[1][2] + '   |')
-    print('|       |       |       |')
-    print('+-------+-------+-------+')
-    print('|       |       |       |')
-    print('|   ' + board[2][0] + '   |   ' + board[2][1] + '   |   ' + board[2][2] + '   |')
-    print('|       |       |       |')
-    print('+-------+-------+-------+')
+            d1 = state[0][0] == player and state[1][1] == player and state[2][2] == player
+            d2 = state[0][2] == player and state[1][1] == player and state[2][0] == player
+            if d1 or d2:
+                return 1 if player == "X" else -1
+
+        return 0
+
+    def max_value(self, state):
+        if self.terminal(state):
+            return self.utility(state)
+
+        v = -10
+        for action in self.actions(state):
+            v = max(v, self.min_value(self.result(state, action)))
+        return v
+
+    def min_value(self, state):
+        if self.terminal(state):
+            return self.utility(state)
+
+        v = +10
+        for action in self.actions(state):
+            v = min(v, self.max_value(self.result(state, action)))
+        return v
+
+    def play(self):
+        while not self.terminal(self.state):
+            if self.player(self.state) == "X":
+                move = int(input("Please enter your move: ")) - 1
+                row = move // 3
+                col = move % 3
+                self.state = self.result(self.state, tuple(row, col))
+            else:
+                v = +10
+                move = ()
+                for action in self.actions(self.state):
+                    vp = self.max_value(self.result(self.state, action))
+                    if v > vp:
+                        v = vp
+                        move = action
+
+                self.state = self.result(self.state, move)
+
+            self.display()
+
+    def display(self):
+        # The function draws the computer's move and updates the board.
+        print('+-------+-------+-------+')
+        print('|       |       |       |')
+        print('|   ' + self.state[0][0] + '   |   ' + self.state[0][1] + '   |   ' + self.state[0][2] + '   |')
+        print('|       |       |       |')
+        print('+-------+-------+-------+')
+        print('|       |       |       |')
+        print('|   ' + self.state[1][0] + '   |   ' + self.state[1][1] + '   |   ' + self.state[1][2] + '   |')
+        print('|       |       |       |')
+        print('+-------+-------+-------+')
+        print('|       |       |       |')
+        print('|   ' + self.state[2][0] + '   |   ' + self.state[2][1] + '   |   ' + self.state[2][2] + '   |')
+        print('|       |       |       |')
+        print('+-------+-------+-------+')
 
 
-board = [
-    ['1', '2', '3'],
-    ['4', 'X', '6'],
-    ['7', '8', '9']
-]
-
-# draw_move(board)
-#
-# board = [
-#     ['O', '2', '3'],
-#     ['O', 'X', '6'],
-#     ['O', '8', '9']
-# ]
-#
-# print(victory_for(board, 'O'))
-# print(make_list_of_free_fields(board))
-
-sign = 'X'
-draw_move(board)
-while not victory_for(board, sign):
-    if sign == 'X':
-        sign = 'O'
-    else:
-        sign = 'X'
-
-    if sign == 'O':
-        enter_move(board)
-    else:
-        free = make_list_of_free_fields(board)
-        row, col = free[randrange(len(free))]
-        board[row][col] = 'X'
-
-    draw_move(board)
+game = TicTacToe()
+game.display()
+game.play()
